@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="비상 연락처 설정 (최대 5명)"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="20dp"/>
+
+    <EditText android:id="@+id/etNum1" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="연락처 1" android:inputType="phone" />
+    <EditText android:id="@+id/etNum2" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="연락처 2" android:inputType="phone" />
+    <EditText android:id="@+id/etNum3" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="연락처 3" android:inputType="phone" />
+    <EditText android:id="@+id/etNum4" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="연락처 4" android:inputType="phone" />
+    <EditText android:id="@+id/etNum5" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="연락처 5" android:inputType="phone" />
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="저장하기" />
+</LinearLayout>
