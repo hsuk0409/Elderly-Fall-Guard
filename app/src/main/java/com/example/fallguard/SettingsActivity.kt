@@ -14,10 +14,10 @@ class SettingsActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("FallGuardPrefs", Context.MODE_PRIVATE)
         val editTexts = listOf(
-            findViewById<EditText>(R.id.etNum1),
-            findViewById<EditText>(R.id.etNum2),
-            findViewById<EditText>(R.id.etNum3),
-            findViewById<EditText>(R.id.etNum4),
+            findViewById(R.id.etNum1),
+            findViewById(R.id.etNum2),
+            findViewById(R.id.etNum3),
+            findViewById(R.id.etNum4),
             findViewById<EditText>(R.id.etNum5)
         )
 

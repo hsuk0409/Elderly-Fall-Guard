@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.CountDownTimer
 import android.telephony.SmsManager
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -23,7 +24,11 @@ class MainActivity : AppCompatActivity() {
     private var countDownTimer: CountDownTimer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 레이아웃 그리지 전에 시스템 화면 깨우기 요청
+        setupLockScreenFlags()
+
         super.onCreate(savedInstanceState)
+
         setContentView(R.layout.activity_main)
 
         // UI 연결
@@ -61,6 +66,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // 다시 화면에 보일 때마다 잠금화면 무시 재요청
+        setupLockScreenFlags()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent) // 새로운 인텐트로 교체
@@ -72,6 +83,10 @@ class MainActivity : AppCompatActivity() {
     // 낙상 감지 시 실행될 함수
     private fun onFallDetected() {
         if (countDownTimer != null) return
+
+        // ★ 추가: 감지 즉시 화면 플래그를 다시 설정해서 화면을 강제로 깨웁니다.
+        setupLockScreenFlags()
+
         tvStatus.text = "⚠️ 낙상 감지됨! ⚠️"
         btnCancel.visibility = View.VISIBLE
 
@@ -117,8 +132,17 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true)
             setTurnScreenOn(true)
-            (getSystemService(KEYGUARD_SERVICE) as KeyguardManager).requestDismissKeyguard(this, null)
+            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            keyguardManager.requestDismissKeyguard(this, null)
         }
+
+        // 구버전 및 최신버전 공통 플래그 (보강)
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                    WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON or
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+        )
     }
 
     private fun resetAndExit() {

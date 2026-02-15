@@ -9,7 +9,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="FallGuard"
+        android:text="낙상 알림이"
         android:textSize="24sp"
         android:textStyle="bold"
         android:padding="16dp"
@@ -19,7 +19,7 @@
         android:id="@+id/tv_sensor_data"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="센서 값 대기 중..."
+        android:text=""
         android:textSize="14sp"
         android:layout_marginBottom="10dp" />
 
@@ -27,7 +27,7 @@
         android:id="@+id/tv_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="상태: 모니터링 중"
+        android:text="모니터링 중"
         android:textSize="18sp" />
 
     <TextView
