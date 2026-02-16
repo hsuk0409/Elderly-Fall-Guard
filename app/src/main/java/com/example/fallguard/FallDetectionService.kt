@@ -19,9 +19,12 @@ import kotlin.math.sqrt
 class FallDetectionService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
+    private var freeFallDurationStart: Long = 0 // 자유낙하 유지 시간 측정용
+    private var freeFallStartTime: Long = 0 // 자유낙하 시작 시간 기록
     private var isFreeFallDetected = false
     private var isWaitingForNoMovement = false
     private var noMovementStartTime: Long = 0
+    private var isMonitoring = true // 현재 감지 중인지 여부
 
     override fun onCreate() {
         super.onCreate()
@@ -46,23 +49,43 @@ class FallDetectionService : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            val x = event.values[0]
-            val y = event.values[1]
-            val z = event.values[2]
-            val totalAcceleration = sqrt(x * x + y * y + z * z)
+        if (!isMonitoring) return
 
-            // 1단계: 자유낙하 감지 (무중력 상태에 가까운 3.0 이하)
-            if (totalAcceleration < 3.0) {
-                isFreeFallDetected = true
+        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
+            val totalAcceleration = sqrt(
+                event.values[0] * event.values[0] +
+                        event.values[1] * event.values[1] +
+                        event.values[2] * event.values[2]
+            )
+            val currentTime = System.currentTimeMillis()
+
+            // --- 1단계: 자유낙하 감지 (시간 검증 추가) ---
+            if (totalAcceleration < 3.5) { // 기준값을 3.5로 약간 여유 있게 잡음
+                if (freeFallDurationStart == 0L) {
+                    freeFallDurationStart = currentTime
+                }
+
+                // 핵심: 자유낙하 상태가 최소 0.2초(200ms) 이상 지속되어야 '진짜 낙하'로 인정
+                // (1m 낙하 시 약 0.45초 소요되므로 0.2초는 매우 안전한 기준입니다)
+                if (currentTime - freeFallDurationStart > 200) {
+                    isFreeFallDetected = true
+                    freeFallStartTime = currentTime
+                }
+            } else {
+                // 가속도가 다시 올라가면(낙하 중단) 시간 측정 초기화
+                freeFallDurationStart = 0L
             }
 
-            // 2단계: 바닥 충격 감지 (자유낙하 후 가속도가 급격히 50 이상으로 튐)
-            if (isFreeFallDetected && totalAcceleration > 50.0) {
-                isFreeFallDetected = false // 초기화
-                isWaitingForNoMovement = true
-                noMovementStartTime = System.currentTimeMillis()
-                Log.d("FallGuard", "충격 감지! 정지 상태 확인 중...")
+            // --- 2단계: 충격 감지 (0.2초 이상 떨어진 직후에만 발생해야 함) ---
+            if (isFreeFallDetected) {
+                if (currentTime - freeFallStartTime > 500) {
+                    isFreeFallDetected = false
+                } else if (totalAcceleration > 55.0) { // 충격 기준을 55로 상향
+                    isFreeFallDetected = false
+                    isWaitingForNoMovement = true
+                    noMovementStartTime = currentTime
+                    Log.d("가족지키미", "진짜 낙하 후 충격 확인!")
+                }
             }
 
             // 3단계: 정지 상태 확인 (수정 버전)
@@ -73,6 +96,7 @@ class FallDetectionService : Service(), SensorEventListener {
                 // 1.5초(1500ms) 동안 큰 움직임 없이 잘 버텼다면 낙상으로 확정!
                 if (timeElapsed > 1500) {
                     isWaitingForNoMovement = false
+                    isMonitoring = false // ★ 중복 감지 방지를 위해 감지 일시 중단!
                     Log.d("FallGuard", "낙상 확정: 1.5초간 정지 확인됨")
                     triggerFallAlert()
                 }else {
@@ -130,6 +154,12 @@ class FallDetectionService : Service(), SensorEventListener {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == "RESUME_MONITORING") {
+            isMonitoring = true
+            isFreeFallDetected = false
+            isWaitingForNoMovement = false
+            Log.d("FallGuard", "감지를 재개합니다.")
+        }
         return START_STICKY // 서비스가 강제 종료되어도 시스템이 다시 살려줌
     }
 

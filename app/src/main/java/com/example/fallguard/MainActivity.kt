@@ -158,6 +158,12 @@ class MainActivity : AppCompatActivity() {
         countDownTimer?.cancel()
         countDownTimer = null
 
+        // 이 코드가 있어야 '취소' 후에 다시 낙상이 발생했을 때 감지할 수 있습니다.
+        val resumeIntent = Intent(this, FallDetectionService::class.java).apply {
+            action = "RESUME_MONITORING"
+        }
+        startService(resumeIntent)
+
         // 2. UI 상태 초기화
         tvStatus.text = "상태: 모니터링 중"
         tvCountdown.text = ""
