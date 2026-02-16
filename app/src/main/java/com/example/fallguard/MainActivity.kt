@@ -122,7 +122,15 @@ class MainActivity : AppCompatActivity() {
 
         val smsManager = getSystemService(SmsManager::class.java)
         contacts.forEach { num ->
-            try { smsManager.sendTextMessage(num, null, "[FallGuard] 긴급 상황!$locMsg", null, null) } catch(e: Exception) {}
+            try {
+                smsManager.sendTextMessage(
+                    num,
+                    null,
+                    "[가족지미키] 긴급 상황! 낙상 감지!$locMsg",
+                    null,
+                    null
+                )
+            } catch(e: Exception) {}
         }
         tvStatus.text = "✅ ${contacts.size}명에게 전송 완료"
         btnCancel.visibility = View.GONE

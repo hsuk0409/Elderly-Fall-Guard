@@ -12,6 +12,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlin.math.sqrt
 
@@ -19,7 +20,8 @@ class FallDetectionService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
     private var isFreeFallDetected = false
-    private var lastImpactTime: Long = 0
+    private var isWaitingForNoMovement = false
+    private var noMovementStartTime: Long = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -29,7 +31,7 @@ class FallDetectionService : Service(), SensorEventListener {
         // 1. 평상시 알림 (Foreground Service 유지용)
         val normalNotification = NotificationCompat.Builder(this, "FALL_CH")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("FallGuard가 작동 중입니다")
+            .setContentTitle("가족지키미가 작동 중입니다")
             .setContentText("실시간으로 낙상을 감시하고 있습니다.")
             .setPriority(NotificationCompat.PRIORITY_LOW) // 평소엔 조용하게
             .build()
@@ -45,21 +47,38 @@ class FallDetectionService : Service(), SensorEventListener {
 
     override fun onSensorChanged(event: SensorEvent?) {
         if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            val x = event.values[0]; val y = event.values[1]; val z = event.values[2]
+            val x = event.values[0]
+            val y = event.values[1]
+            val z = event.values[2]
             val totalAcceleration = sqrt(x * x + y * y + z * z)
 
-            // 자유낙하 감지
-            if (totalAcceleration < 3.0) isFreeFallDetected = true
+            // 1단계: 자유낙하 감지 (무중력 상태에 가까운 3.0 이하)
+            if (totalAcceleration < 3.0) {
+                isFreeFallDetected = true
+            }
 
-            // 충격 감지
-            if (isFreeFallDetected && totalAcceleration > 25.0) {
+            // 2단계: 바닥 충격 감지 (자유낙하 후 가속도가 급격히 50 이상으로 튐)
+            if (isFreeFallDetected && totalAcceleration > 50.0) {
+                isFreeFallDetected = false // 초기화
+                isWaitingForNoMovement = true
+                noMovementStartTime = System.currentTimeMillis()
+                Log.d("FallGuard", "충격 감지! 정지 상태 확인 중...")
+            }
+
+            // 3단계: 정지 상태 확인 (수정 버전)
+            if (isWaitingForNoMovement) {
                 val currentTime = System.currentTimeMillis()
-                if (currentTime - lastImpactTime > 3000) { // 중복 방지 시간을 3초로 약간 늘림
-                    lastImpactTime = currentTime
-                    isFreeFallDetected = false
+                val timeElapsed = currentTime - noMovementStartTime
 
-                    // ★ 핵심: 실제로 낙상이 감지되었을 때만 화면을 깨움
+                // 1.5초(1500ms) 동안 큰 움직임 없이 잘 버텼다면 낙상으로 확정!
+                if (timeElapsed > 1500) {
+                    isWaitingForNoMovement = false
+                    Log.d("FallGuard", "낙상 확정: 1.5초간 정지 확인됨")
                     triggerFallAlert()
+                }else {
+                    // 아직 1.5초가 안 되었다면 계속 센서값을 지켜봄
+                    // (여기에 추가적인 취소 로직을 넣지 않음으로써 반동에 의한 오작동 방지)
+                    Log.d("FallGuard", "안정화 대기 중... 현재 값: $totalAcceleration")
                 }
             }
         }
