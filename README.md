@@ -1,2 +1,2 @@
 # Elderly-Fall-Guard
-노인 낙상 보호 앱
+노인 낙상 감지 앱
